@@ -59,7 +59,7 @@ def receive_messages():
             break
 
 def check_pvt_key():
-    file = open("private_key.txt", "r")
+    file = open("private_key.txt", "+a")
     f_pvt_key = file.read()
     pvt_key = ""
     if f_pvt_key == "" or len(f_pvt_key) != 2048:
@@ -74,7 +74,8 @@ def check_pvt_key():
     global pvt_key_obj
     pvt_key_obj = serialization.load_pem_private_key(
         pvt_key.encode('utf-8'),
-        password=None
+        password=None,
+        backend=default_backend()
     )
     file.close()
     
@@ -93,7 +94,10 @@ def login():
         receive_thread.start()
         send_message()
     else:
-        print("Login failed")
+        print(response)
+        menu()
+        
+        
 
 def register():
     username = input("Enter your username: ")
@@ -107,30 +111,31 @@ def register():
         print("Login to continue")
         login()
     else:
-        print("Register failed")
-        print("Try again")
-        register()
+        print(response)
+        menu()
+
+def menu():
+    print("1. login")
+    print("2. register")
+    print("3. exit" )
+    while True:
+        choice = input("Enter your choice: ")
+        if choice == "1":
+            login()
+            break
+        elif choice == "2":
+            register()
+            break
+        elif choice == "3":
+            client_socket.close()
+            break
+        else:
+            print("Invalid choice. Try again.")
 ###############################################################################
 ###############################################################################
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect(('localhost', 12345))
 
 print("Welcome to the chatroom!")
-print("1. login")
-print("2. register")
-print("3. exit" )
-while True:
-    choice = input("Enter your choice: ")
-    if choice == "1":
-        login()
-        break
-    elif choice == "2":
-        register()
-        break
-    elif choice == "3":
-        client_socket.close()
-        break
-    else:
-        print("Invalid choice. Try again.")
-    
+menu()
 
