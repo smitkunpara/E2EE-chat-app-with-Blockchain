@@ -11,18 +11,32 @@ db = mysql.connector.connect(
 cursor = db.cursor()
 
 def print_all_data():
-    # Execute a SELECT query to fetch all data from a table (e.g., 'users' table)
-    query = "SELECT * FROM users"  # Replace 'your_table_name' with the actual table name
+    query = """create database UROP
+    use UROP
+    create table users(
+        username varchar(255) primary key,
+        password varchar(255),
+        pub_key varchar(2048)
+    )
 
+    create table messages(
+        id int auto_increment primary key,
+        sender varchar(255),
+        recipient varchar(255),
+        message varchar(2048)
+    )
+    
+            """
     cursor.execute(query)
-
-    # Fetch all rows from the result set
+    db.commit()
+    """
+    query = "SELECT * FROM users"
+    cursor.execute(query)
     rows = cursor.fetchall()
-
-    # Print the retrieved data
     for row in rows:
         print(row)
-
+    """
+    
 if __name__ == "__main__":
     print_all_data()
 

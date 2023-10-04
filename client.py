@@ -102,6 +102,7 @@ def register():
     client_socket.send(message_to_send.encode('utf-8'))
     response = client_socket.recv(1024).decode('utf-8')
     if response == "register successful":
+        check_pvt_key()
         print("Register successful")
         print("Login to continue")
         login()
