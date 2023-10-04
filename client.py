@@ -64,7 +64,7 @@ def check_pvt_key():
     pvt_key = ""
     if f_pvt_key == "" or len(f_pvt_key) != 2048:
         client_socket.send("no_pvt_key".encode('utf-8'))
-        pvt_key = client_socket.recv(1024).decode('utf-8')
+        pvt_key = client_socket.recv(4096).decode('utf-8')
         file = open("private_key.txt", "w")
         file.write(pvt_key)
         file.close()
@@ -72,11 +72,16 @@ def check_pvt_key():
         client_socket.send("pvt_key".encode('utf-8'))
         pvt_key = file.read()
     global pvt_key_obj
-    pvt_key_obj = serialization.load_pem_private_key(
-        pvt_key.encode('utf-8'),
-        password=None,
-        backend=default_backend()
-    )
+    print(pvt_key)
+    try:
+        pvt_key_obj = serialization.load_pem_private_key(
+            pvt_key.encode('utf-8'),
+            password=None,
+            backend=default_backend()
+        )
+    except Exception as e:
+        print(f"Error loading private key: {e}")
+        
     file.close()
     
         

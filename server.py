@@ -67,12 +67,13 @@ def send(message):
 
 def no_pvt_key(username):
     private_key=generate_key_pair(username)
+    print("pvt key",private_key)
     private_key_pem = private_key.private_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption()
     )
-    # Convert bytes to string
+    print("pem key",private_key_pem.decode('utf-8'))
     private_key_pem_str = private_key_pem.decode('utf-8')
     online_users[username].send(private_key_pem_str.encode('utf-8'))
 
