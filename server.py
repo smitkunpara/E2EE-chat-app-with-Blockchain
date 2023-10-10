@@ -50,19 +50,18 @@ def register(message):
         client_socket.send("register failed".encode('utf-8'))
 
 def request_public_key(message):
-    queary = f"SELECT * FROM users WHERE username = '{message[1]}'"
-    cursor.execute(queary)
-    rows = cursor.fetchall()
-    if len(rows) == 0:
-        client_socket.send("no_public_key".encode('utf-8'))
+    print("message while requesting : ",message)
+    if message[1] not in online_users:
+        client_socket.send("user is offline".encode('utf-8'))
     else:
-        client_socket.send(rows[2].encode('utf-8'))
+        queary = f"SELECT * FROM users WHERE username = '{message[1]}'"
+        cursor.execute(queary)
+        rows = cursor.fetchall()
+        client_socket.send(rows[0][2].encode('utf-8'))
 
 def send(message):
-    recipient = message[1]
-    message = message[2]
-    recipient_socket = online_users[recipient]
-    recipient_socket.send(message.encode('utf-8'))
+    recipient_socket = online_users[message[1]]
+    recipient_socket.send(message[2].encode('utf-8'))
 
 
 def no_pvt_key(username):
@@ -96,8 +95,6 @@ def handle_client(client_socket, client_address,username):
                     username=message[1]
                     online_users[username]=client_socket
                     client_socket.send("login successful".encode('utf-8'))
-                    
-    
             elif message[0]=="register":
                 register(message)
             elif message[0]=="request_public_key":
@@ -109,13 +106,9 @@ def handle_client(client_socket, client_address,username):
     except Exception as e:
         print(f"Error: {e}")
     finally:
-        print(connected_clients)
-        print(online_users)
         online_users.pop(username)
         client_socket.close()
 
-#####################################################
-#####################################################
 db = mysql.connector.connect(
     host="localhost",
     user="root",

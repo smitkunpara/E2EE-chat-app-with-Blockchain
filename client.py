@@ -3,29 +3,63 @@ import threading
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
-
-pvt_key_obj=None
-
+import time
+import base64
+#################################################################
+def receive_messages():
+    print("receive_messages")
+    while True:
+        # print(not stop_event.is_set())
+        # print("working")
+        try:
+            client_socket.settimeout(0.1)
+            message = client_socket.recv(1024).decode('utf-8')
+            client_socket.settimeout(None)
+            message = decrypt_message(pvt_key_obj, message)
+            print(message)
+        except Exception as e:
+            client_socket.settimeout(None)
+            if stop_event.is_set():
+                break
+            # print(f"Error: {e}")
+    print("receive_messages stopped")
 def send_message():
     while True:
         recipient = input("username: ")
-        recipient = "request_public_key:"+recipient
-        client_socket.send(recipient.encode('utf-8'))
-        pub_key=client_socket.recv(1024).decode('utf-8')
+        stop_event.set()
+        message = "request_public_key:"+recipient
+        global receive_thread
+        time.sleep(0.3)
+        client_socket.send(message.encode('utf-8'))
+        while True:
+            try:
+                pub_key=client_socket.recv(4096).decode('utf-8')
+                break
+            except Exception as e:
+                print(f"Error: {e}")
+                continue
+        
+        stop_event.clear()
+        receive_thread = threading.Thread(target=receive_messages)
+        receive_thread.start()
         if pub_key == "no_public_key":
-            print("User not found")
-            send_message()
+            print(pub_key)
+        elif pub_key == "user is offline":
+            print(pub_key)
         else:
+            print(pub_key)
             pub_key_obj = serialization.load_pem_public_key(
                 pub_key.encode('utf-8'),
                 backend=default_backend()
             )
             message = input("message: ")
-            message_to_send = f"send:{recipient}:{message}"
-            message_to_send = encrypt_message(pub_key_obj, message_to_send)
+            encrypted_message = encrypt_message(pub_key_obj, message)
+            message_to_send = f"send:{recipient}:{base64.b64encode(encrypted_message).decode('utf-8')}"
             client_socket.send(message_to_send.encode('utf-8'))
 
+
 def encrypt_message(public_key, message):
+    message=message.encode('utf-8')
     encrypted_message = public_key.encrypt(
         message,
         padding.OAEP(
@@ -37,6 +71,7 @@ def encrypt_message(public_key, message):
     return encrypted_message
 
 def decrypt_message(private_key, encrypted_message):
+    encrypted_message = base64.b64decode(encrypted_message)
     decrypted_message = private_key.decrypt(
         encrypted_message,
         padding.OAEP(
@@ -47,22 +82,11 @@ def decrypt_message(private_key, encrypted_message):
     )
     return decrypted_message
 
-
-def receive_messages():
-    while True:
-        try:
-            message = client_socket.recv(1024).decode('utf-8')
-            message = decrypt_message(pvt_key_obj, message)
-            print(message)
-        except Exception as e:
-            print(f"Error: {e}")
-            break
-
 def check_pvt_key():
     file = open("private_key.txt", "+a")
     f_pvt_key = file.read()
     pvt_key = ""
-    if f_pvt_key == "" or len(f_pvt_key) != 2048:
+    if len(f_pvt_key) < 1650:
         client_socket.send("no_pvt_key".encode('utf-8'))
         pvt_key = client_socket.recv(4096).decode('utf-8')
         file = open("private_key.txt", "w")
@@ -83,8 +107,6 @@ def check_pvt_key():
         print(f"Error loading private key: {e}")
         
     file.close()
-    
-        
 
 def login():
     username = input("Enter your username: ")
@@ -95,8 +117,8 @@ def login():
     if response == "login successful":
         check_pvt_key()
         print("Login successful")
-        receive_thread = threading.Thread(target=receive_messages)
         receive_thread.start()
+        
         send_message()
     else:
         print(response)
@@ -140,7 +162,10 @@ def menu():
 ###############################################################################
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect(('localhost', 12345))
-
+pvt_key_obj=None
+receive_thread = threading.Thread(target=receive_messages)
+stop_event = threading.Event()
+flag=True
 print("Welcome to the chatroom!")
 menu()
 
