@@ -129,6 +129,8 @@ def login():
 def register():
     username = input("Enter your username: ")
     password = input("Enter your password: ")
+    # convert password to hash
+    password = password
     message_to_send = f"register:{username}:{password}"
     client_socket.send(message_to_send.encode('utf-8'))
     response = client_socket.recv(1024).decode('utf-8')

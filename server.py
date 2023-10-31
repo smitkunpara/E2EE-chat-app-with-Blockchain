@@ -6,6 +6,8 @@ from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 import random
 import string
+import hashlib
+
 
 connected_clients = {}
 online_users = {}
@@ -42,7 +44,8 @@ def register(message):
     rows = cursor.fetchall()
     print("rows:",rows)
     if len(rows) == 0 or rows==None:
-        queary = f"INSERT INTO users (username, password) VALUES ('{message[1]}', '{message[2]}')"
+
+        queary = f"INSERT INTO users (username, password) VALUES ('{message[1]}', '{hashlib.md5(message[2].encode()).hexdigest()}')"
         cursor.execute(queary)
         db.commit()
         client_socket.send("register successful".encode('utf-8'))
@@ -85,7 +88,7 @@ def handle_client(client_socket, client_address,username):
             global cursor
             global db
             if message[0]=="login":
-                queary = f"SELECT * FROM users WHERE username = '{message[1]}' AND password = '{message[2]}'"
+                queary = f"SELECT * FROM users WHERE username = '{message[1]}' AND password = '{hashlib.md5(message[2].encode()).hexdigest()}'"
                 print(queary)
                 cursor.execute(queary)
                 rows = cursor.fetchall()
