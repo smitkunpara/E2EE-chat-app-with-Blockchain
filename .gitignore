@@ -1,3 +1,6 @@
 .vscode
 tempCodeRunnerFile.py
-extra.py
+extra*.py
+*.pem
+.cph
+.vscode
