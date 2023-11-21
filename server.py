@@ -3,9 +3,6 @@ import ssl
 import threading
 import mysql.connector
 import json
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization, hashes
-from cryptography.hazmat.primitives.asymmetric import padding,rsa
 import hashlib
 
 def reliable_send(ssl_client_socket,message):
@@ -55,14 +52,13 @@ def request_public_key(message):
         queary = f"SELECT * FROM users WHERE username = '{message[1]}'"
         cursor.execute(queary)
         rows = cursor.fetchall()
-        return rows[0][2]
+        return ["requested_pub_key",rows[0][2]]
 
 def send_message(message, is_logged_in):
     if is_logged_in==True:
         if message[1] in online_users:
             ssl_client_socket = online_users[message[1]]
-            message_to_send = f"send_message:{message[2]}"
-            reliable_send(ssl_client_socket, message_to_send)
+            reliable_send(ssl_client_socket, ["message_received",message[2]])
             return "Message sent"
         else:
             return "User is offline"
