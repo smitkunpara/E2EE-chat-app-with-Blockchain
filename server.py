@@ -35,15 +35,13 @@ def login(message):
     cursor.execute(queary)
     rows = cursor.fetchall()
     if len(rows) == 0 or rows==None:
-        return "User not found"
+        return False,"User not found"
     else:
         if rows[0][1] == hashlib.md5(message[2].encode()).hexdigest():
             online_users[message[1]] = ssl_client_socket
-            global is_logged_in
-            is_logged_in = True
-            return "login successful"
+            return True,"login successful"
         else:
-            return "Incorrect password"
+            return False,"Incorrect password"
 
 def request_public_key(message):
     if message[1] not in online_users:
@@ -52,7 +50,8 @@ def request_public_key(message):
         queary = f"SELECT * FROM users WHERE username = '{message[1]}'"
         cursor.execute(queary)
         rows = cursor.fetchall()
-        return ["requested_pub_key",rows[0][2]]
+        print(["requested_pub_key",message[1],rows[0][2]])
+        return ["requested_pub_key",message[1],rows[0][2]]
 
 def send_message(message, is_logged_in):
     if is_logged_in==True:
@@ -61,7 +60,7 @@ def send_message(message, is_logged_in):
             reliable_send(ssl_client_socket, ["message_received",message[2]])
             return "Message sent"
         else:
-            return "User is offline"
+            return "User is offline or does not exist"
     else:
         return "Please login first"
 
@@ -86,7 +85,7 @@ def handle_client(ssl_client_socket):
         if message[0] == "register":
             message_result = register(message)
         elif message[0] == "login":
-            message_result = login(message)
+            is_logged_in,message_result = login(message)
         elif message[0] == "update_public_key":
             message_result=update_public_key(message)
         elif message[0] == "request_public_key":
@@ -127,7 +126,4 @@ while True:
     ssl_client_socket = context.wrap_socket(client_socket, server_side=True)
     print(f"Connection from {client_address} has been established.")
     client_thread = threading.Thread(target=handle_client, args=(ssl_client_socket,))
-    client_thread.start()
-    
-
-        
+    client_thread.start()        

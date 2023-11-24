@@ -4,8 +4,7 @@ import threading
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
-import time
-import json,mysql.connector
+import json
 import ssl
 
 def reliable_send(message):
@@ -77,7 +76,7 @@ def encrypt_message(public_key_pem):
     return encrypted_message
 
 def decrypt_message(ciphertext):
-    plaintext = private_key.decrypt(
+    plaintext = pvt_key_obj.decrypt(
         ciphertext,
         padding.OAEP(
             mgf=padding.MGF1(algorithm=hashes.SHA256()),
@@ -175,22 +174,31 @@ def login():
 def send_message():
     username = username_entry.get()
     message = chat_entry.get()
+    chat_entry.delete(0, tk.END)
     if username and message:
-        reliable_send(["request_public_key", username])
-        global user_message
-        user_message = message
+        if username in users_pub_key:
+            encrypted_message = encrypt_message(users_pub_key[username])
+            reliable_send(["send_message", my_username, username, encrypted_message.hex()])
+            message_display.config(state=tk.NORMAL)
+            message_display.insert(tk.END, f"YOU: {message}\n")
+            message_display.config(state=tk.DISABLED)
+        else:
+            reliable_send(["request_public_key", username])
+            global user_message
+            user_message = message
     else:
         print("Please enter both username and message.")
 
 def receive_messages():
-    while threading.Event().is_set() == False:
+    global flag
+    while flag==True:
         try:
             message = reliable_recv()
             if message[0] == "requested_pub_key":
                 global user_message
-                public_key_pem = message[1]
+                users_pub_key[message[1]] = message[2]
                 public_key_obj = serialization.load_pem_public_key(
-                    public_key_pem.encode('utf-8'),
+                    message[2].encode('utf-8'),
                     backend=default_backend()
                 )
                 encrypted_message = public_key_obj.encrypt(
@@ -201,12 +209,12 @@ def receive_messages():
                         label=None
                     )
                 )
-                reliable_send(["send_message", message[2], encrypted_message])
+                reliable_send(["send_message", my_username, encrypted_message.hex()])
+
             elif message[0] == "message_received":
                 message_display.config(state=tk.NORMAL)
-                message_display.insert(tk.END, f"{message[1]}: {decrypt_message(message[2])}\n")
+                message_display.insert(tk.END, f"{decrypt_message(bytes.fromhex(message[1]))}\n")
                 message_display.config(state=tk.DISABLED)
-                
             else:
                 message_display.config(state=tk.NORMAL)
                 message_display.insert(tk.END, f"{message}\n")
@@ -215,8 +223,9 @@ def receive_messages():
             print(f"Error: {e}")          
 
 def logout():
-    global current_user
-    current_user = None
+    global my_username,my_password,pvt_key_obj,flag
+    my_username = my_password = pvt_key_obj = None
+    flag=False
     switch_frame(initial_frame)
 
 def register_second_device():
@@ -247,14 +256,6 @@ def clear_register_form():
     register_username_entry.delete(0, tk.END)
     register_password_entry.delete(0, tk.END)
 
-db = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="root",
-    database="UROP"
-)
-cursor = db.cursor()
-
 context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 context.minimum_version = ssl.TLSVersion.TLSv1_2
 context.maximum_version = ssl.TLSVersion.TLSv1_3
@@ -265,12 +266,12 @@ ssl_client_socket = context.wrap_socket(client_socket,server_hostname='smit')
 ssl_client_socket.connect(('localhost', 12345))
 pvt_key_obj = None
 receive_thread = threading.Thread(target=receive_messages)
-flag=threading.Event().clear()
+flag=True
 my_username = None
 second_device_pub_key = None
 my_password = None
+users_pub_key = {}
 
-##################################################################################################################
 root = tk.Tk()
 root.title("Chat Application")
 
