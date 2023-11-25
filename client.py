@@ -166,6 +166,7 @@ def login():
         my_username = username
         my_password = password
         load_pvt_key()
+        receive_thread = threading.Thread(target=receive_messages)
         receive_thread.start()
         switch_frame(chat_frame)
     else:
@@ -194,6 +195,8 @@ def receive_messages():
     while flag==True:
         try:
             message = reliable_recv()
+            if message==None:
+                break
             if message[0] == "requested_pub_key":
                 global user_message
                 users_pub_key[message[1]] = message[2]
@@ -215,18 +218,27 @@ def receive_messages():
                 message_display.config(state=tk.NORMAL)
                 message_display.insert(tk.END, f"{decrypt_message(bytes.fromhex(message[1]))}\n")
                 message_display.config(state=tk.DISABLED)
+            elif message[0] == "logout successful":
+                break
             else:
                 message_display.config(state=tk.NORMAL)
                 message_display.insert(tk.END, f"{message}\n")
                 message_display.config(state=tk.DISABLED)
+                
         except Exception as e:
             print(f"Error: {e}")          
 
 def logout():
+    reliable_send(["logout"])
     global my_username,my_password,pvt_key_obj,flag
     my_username = my_password = pvt_key_obj = None
     flag=False
-    r_flag=False
+    message_display.config(state=tk.NORMAL)
+    message_display.delete('1.0', tk.END)
+    message_display.config(state=tk.DISABLED)
+    username_entry.delete(0, tk.END)
+    chat_entry.delete(0, tk.END)
+    users_pub_key.clear()
     switch_frame(initial_frame)
 
 def register_second_device():
@@ -258,8 +270,16 @@ def clear_register_form():
     register_password_entry.delete(0, tk.END)
 
 def on_close():
+    print("Closing connection...")
     logout()
+    global ssl_client_socket
+    ssl_client_socket.close()
+    global r_flag
+    r_flag=False
     root.destroy()
+    print("Connection closed.")
+
+
 context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 context.minimum_version = ssl.TLSVersion.TLSv1_2
 context.maximum_version = ssl.TLSVersion.TLSv1_3
@@ -269,7 +289,6 @@ client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 ssl_client_socket = context.wrap_socket(client_socket,server_hostname='smit')
 ssl_client_socket.connect(('localhost', 12345))
 pvt_key_obj = None
-receive_thread = threading.Thread(target=receive_messages)
 flag=True
 r_flag=True
 my_username = None
@@ -280,9 +299,6 @@ users_pub_key = {}
 root = tk.Tk()
 root.title("Chat Application")
 
-
-# Close event binding
-root.protocol("WM_DELETE_WINDOW", on_close)
 
 # Frames
 initial_frame = tk.Frame(root)
@@ -345,8 +361,12 @@ submit_data_button = tk.Button(second_device_frame, text="Submit Data", command=
 message_display = tk.Text(chat_frame, height=20, width=70)
 message_display.config(state=tk.DISABLED)
 
+# Close event binding
+root.protocol("WM_DELETE_WINDOW", on_close)
 # Packing widgets
 pack_widgets()
 root.mainloop()
+
+
 
 user_message=""
