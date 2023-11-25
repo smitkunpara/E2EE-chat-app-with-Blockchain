@@ -10,13 +10,22 @@ def reliable_send(ssl_client_socket,message):
     ssl_client_socket.send(message.encode('utf-8'))
 
 def reliable_recv(ssl_client_socket):
+    print("reliable_recv")
     json_data = ""
     while True:
         try:
+            print("trying to get data")
+            ssl_client_socket.do_handshake()
             json_data += ssl_client_socket.recv(1024).decode('utf-8')
+            if not json_data:
+                raise ConnectionResetError("connection closed")
+            print("got data")
             return json.loads(json_data)
         except ValueError:
+            print("ValueError")
             continue
+        
+        
 
 def register(message):
     queary = f"SELECT * FROM users WHERE username = '{message[1]}'"
@@ -39,9 +48,9 @@ def login(message):
     else:
         if rows[0][1] == hashlib.md5(message[2].encode()).hexdigest():
             online_users[message[1]] = ssl_client_socket
-            return True,"login successful"
+            return message[1],True,"login successful"
         else:
-            return False,"Incorrect password"
+            return "",False,"Incorrect password"
 
 def request_public_key(message):
     if message[1] not in online_users:
@@ -79,24 +88,31 @@ def update_public_key(message):
 
 def handle_client(ssl_client_socket):
     is_logged_in = False
+    username = ""
     while True:
-        message = reliable_recv(ssl_client_socket)
-        print(message)
-        if message[0] == "register":
-            message_result = register(message)
-        elif message[0] == "login":
-            is_logged_in,message_result = login(message)
-        elif message[0] == "update_public_key":
-            message_result=update_public_key(message)
-        elif message[0] == "request_public_key":
-            message_result = request_public_key(message)
-        elif message[0] == "send_message":
-            message_result = send_message(message, is_logged_in)
-        elif message[0] == "logout":
-            message_result = logout(message, is_logged_in)
-        else:
-            print("Invalid message")
-        reliable_send(ssl_client_socket,message_result)
+        try:
+            message = reliable_recv(ssl_client_socket)
+            if message[0] == "register":
+                message_result = register(message)
+            elif message[0] == "login":
+                username,is_logged_in,message_result = login(message)
+            elif message[0] == "update_public_key":
+                message_result=update_public_key(message)
+            elif message[0] == "request_public_key":
+                message_result = request_public_key(message)
+            elif message[0] == "send_message":
+                message_result = send_message(message, is_logged_in)
+            elif message[0] == "logout":
+                message_result = logout(message, is_logged_in)
+            else:
+                print("Invalid message")
+            reliable_send(ssl_client_socket,message_result)
+        except ConnectionResetError:
+            print(f"Connection from {client_address} has been closed.")
+            if username != "":
+                online_users.pop(username)
+            break
+            
 
 db = mysql.connector.connect(
     host="localhost",

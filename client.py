@@ -15,7 +15,7 @@ def reliable_send(message):
 def reliable_recv():
     global ssl_client_socket
     json_data = ""
-    while True:
+    while r_flag==True:
         try:
             json_data += ssl_client_socket.recv(1024).decode('utf-8')
             return json.loads(json_data)
@@ -226,6 +226,7 @@ def logout():
     global my_username,my_password,pvt_key_obj,flag
     my_username = my_password = pvt_key_obj = None
     flag=False
+    r_flag=False
     switch_frame(initial_frame)
 
 def register_second_device():
@@ -256,6 +257,9 @@ def clear_register_form():
     register_username_entry.delete(0, tk.END)
     register_password_entry.delete(0, tk.END)
 
+def on_close():
+    logout()
+    root.destroy()
 context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 context.minimum_version = ssl.TLSVersion.TLSv1_2
 context.maximum_version = ssl.TLSVersion.TLSv1_3
@@ -267,6 +271,7 @@ ssl_client_socket.connect(('localhost', 12345))
 pvt_key_obj = None
 receive_thread = threading.Thread(target=receive_messages)
 flag=True
+r_flag=True
 my_username = None
 second_device_pub_key = None
 my_password = None
@@ -274,6 +279,10 @@ users_pub_key = {}
 
 root = tk.Tk()
 root.title("Chat Application")
+
+
+# Close event binding
+root.protocol("WM_DELETE_WINDOW", on_close)
 
 # Frames
 initial_frame = tk.Frame(root)
