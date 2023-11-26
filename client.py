@@ -42,6 +42,8 @@ def pack_widgets():
     register_submit_button.pack(pady=10)
     back_to_register_button.pack(pady=10)
 
+    # logout_button.pack(pady=10)
+    logout_button.place(x=550,y=30)
     chat_label.pack(pady=10)
     chat_message_label.pack(pady=5)
     message_display.pack(pady=10)
@@ -49,40 +51,7 @@ def pack_widgets():
     username_entry.pack(side=tk.LEFT, padx=5)
     message_label.pack(side=tk.RIGHT, padx=5)
     chat_entry.pack(side=tk.RIGHT, padx=5)
-    send_button.pack(pady=10)
-    logout_button.pack(pady=10)
-    second_device_button.pack(pady=10)
-    device_code_label.pack(pady=2)
-    device_code_entry.pack(pady=5)
-    submit_data_button.pack(pady=10)
-    second_device_button.pack(pady=10)
-
-# def encrypt_message(public_key_pem):
-#     global user_message
-#     public_key = serialization.load_pem_public_key(
-#         public_key_pem.encode('utf-8'),
-#         backend=default_backend()
-#     )
-#     encrypted_message = public_key.encrypt(
-#         user_message.encode('utf-8'),
-#         padding.OAEP(
-#             mgf=padding.MGF1(algorithm=hashes.SHA256()),
-#             algorithm=hashes.SHA256(),
-#             label=None
-#         )
-#     )
-#     return encrypted_message
-
-# def decrypt_message(ciphertext):
-    # plaintext = pvt_key_obj.decrypt(
-    #     ciphertext,
-    #     padding.OAEP(
-    #         mgf=padding.MGF1(algorithm=hashes.SHA256()),
-    #         algorithm=hashes.SHA256(),
-    #         label=None
-    #     )
-    # )
-    # return plaintext.decode('utf-8')
+    send_button.pack(pady=10,side=tk.RIGHT)
 
 def show_login():
     switch_frame(login_frame)
@@ -95,36 +64,6 @@ def show_register():
 def show_initial():
     switch_frame(initial_frame)
 
-# def load_pvt_key():
-#     global my_username,my_password
-#     global pvt_key_obj
-#     with open("pvt_key.pem", "a+") as f:
-#         pass
-#     with open("pvt_key.pem", "r") as f:
-#         pvt_key_pem = f.read()
-#     if pvt_key_pem == "" or pvt_key_pem == None:
-#         pvt_key_obj = generate_private_key()
-#         pvt_key_pem = pvt_key_obj.private_bytes(
-#             encoding=serialization.Encoding.PEM,
-#             format=serialization.PrivateFormat.PKCS8,
-#             encryption_algorithm=serialization.BestAvailableEncryption((my_username+my_password).encode('utf-8'))
-#         ).decode('utf-8')
-#         with open("pvt_key.pem", "w") as f:
-#             f.write(pvt_key_pem)
-#         public_key = pvt_key_obj.public_key()
-#         public_key_pem = public_key.public_bytes(
-#             encoding=serialization.Encoding.PEM,
-#             format=serialization.PublicFormat.SubjectPublicKeyInfo
-#         ).decode('utf-8')
-#         reliable_send(["update_public_key", my_username,public_key_pem])
-#         if reliable_recv() != "public key updated":
-#             load_pvt_key()
-#     else:
-#         pvt_key_obj = serialization.load_pem_private_key(
-#             pvt_key_pem.encode('utf-8'),
-#             password=(my_username+my_password).encode('utf-8'),
-#             backend=default_backend()
-#         )
 def load_pvt_key():
     global pvt_key_obj,my_username,my_password
     with open("pvt_key.pem", "a+") as f:
@@ -238,10 +177,6 @@ def logout():
     users_pub_key.clear()
     switch_frame(initial_frame)
 
-def register_second_device():
-    entered_device_code = device_code_entry.get()
-    reliable_send(["register_second_device", entered_device_code])
-
 def switch_frame(frame):
     login_message_label.config(text="")
     register_message_label.config(text="")
@@ -279,7 +214,7 @@ context.load_verify_locations('C:/Users/smitk/OneDrive/programs/python/projects/
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 ssl_client_socket = context.wrap_socket(client_socket,server_hostname='smit')
-ssl_client_socket.connect(('10.1.185.149', 12345))
+ssl_client_socket.connect(('10.1.185.149', 1234))
 pvt_key_obj = None
 flag=True
 r_flag=True
@@ -335,8 +270,6 @@ chat_message_label = tk.Label(chat_frame, text="",fg="red")
 # Entry Widgets
 username_entry = tk.Entry(chat_frame, width=20)
 chat_entry = tk.Entry(chat_frame, width=50)
-device_code_label = tk.Label(second_device_frame, text="Enter Device Code:")
-device_code_entry = tk.Entry(second_device_frame, width=20)
 
 # Buttons
 login_submit_button = tk.Button(login_frame, text="Submit", command=login)
@@ -345,8 +278,6 @@ send_button = tk.Button(chat_frame, text="Send", command=send_message)
 logout_button = tk.Button(chat_frame, text="Logout", command=logout)
 back_to_login_button = tk.Button(login_frame, text="Back", command=show_initial)
 back_to_register_button = tk.Button(register_frame, text="Back", command=show_initial)
-second_device_button = tk.Button(chat_frame, text="Add Second Device", command=show_second_device_input)
-submit_data_button = tk.Button(second_device_frame, text="Submit Data", command=register_second_device)
 
 
 # Message Display

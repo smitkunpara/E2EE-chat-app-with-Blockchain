@@ -109,7 +109,6 @@ def logout(username):
     online_users.pop(username)
     return "",False,["logout successful"]
 
-
 def handle_client(ssl_client_socket):
     is_logged_in = False
     username = ""
@@ -148,7 +147,7 @@ db = mysql.connector.connect(
 cursor = db.cursor()
 
 host = '10.1.185.149'
-port = 12345
+port = 1234
 
 context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 context.minimum_version = ssl.TLSVersion.TLSv1_2

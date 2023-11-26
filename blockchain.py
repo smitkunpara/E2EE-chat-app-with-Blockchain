@@ -192,21 +192,3 @@ def update_user_data(username,pubkey,time):
 		print(e)
 		return None
 
-
-
-
-# set_user_data("smit","smit")
-# set_user_data("user2","pass2")
-# set_user_data("user3","pass3")
-
-# print(get_user_data("user1"))
-# print(get_user_data("user2"))
-# print(get_user_data("user3"))
-
-# update_user_data("user1","pubkey1",1)
-# update_user_data("user2","pubkey2",2)
-# update_user_data("user3","pubkey3",3)
-
-# print(get_user_data("user1"))
-# print(get_user_data("user2"))
-# print(get_user_data("user3"))

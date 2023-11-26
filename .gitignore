@@ -3,3 +3,4 @@ tempCodeRunnerFile.py
 extra*.py
 *.pem
 .cph
+__pycache__
