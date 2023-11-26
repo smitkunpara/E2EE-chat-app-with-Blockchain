@@ -193,7 +193,7 @@ def send_message():
     if username and message:
         if username in users_pub_key:
             encrypted_message = encrypt_message(users_pub_key[username],message)
-            reliable_send(["send_message", my_username, encrypted_message])
+            reliable_send(["send_message", username, encrypted_message])
             add_message_to_chat(f"YOU({username}): {message}\n")
         else:
             reliable_send(["request_public_key", username])
@@ -214,7 +214,7 @@ def receive_messages():
             public_key=public_key_from_pem(message[2])
             users_pub_key[message[1]] = public_key
             encrypted_message=encrypt_message(public_key,user_message)
-            reliable_send(["send_message", my_username, encrypted_message])
+            reliable_send(["send_message", message[1], encrypted_message])
             add_message_to_chat(f"YOU({message[1]}): {user_message}\n")
         elif message[0] == "message_received":
             global pvt_key_obj
@@ -279,7 +279,7 @@ context.load_verify_locations('C:/Users/smitk/OneDrive/programs/python/projects/
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 ssl_client_socket = context.wrap_socket(client_socket,server_hostname='smit')
-ssl_client_socket.connect(('localhost', 12345))
+ssl_client_socket.connect(('10.1.185.149', 12345))
 pvt_key_obj = None
 flag=True
 r_flag=True
