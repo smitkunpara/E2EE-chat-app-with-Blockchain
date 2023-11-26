@@ -1,10 +1,8 @@
 import tkinter as tk
 import socket
 import threading
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization, hashes
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
 import json
+from enc_dec import *
 import ssl
 
 def reliable_send(message):
@@ -59,32 +57,32 @@ def pack_widgets():
     submit_data_button.pack(pady=10)
     second_device_button.pack(pady=10)
 
-def encrypt_message(public_key_pem):
-    global user_message
-    public_key = serialization.load_pem_public_key(
-        public_key_pem.encode('utf-8'),
-        backend=default_backend()
-    )
-    encrypted_message = public_key.encrypt(
-        user_message.encode('utf-8'),
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
-        )
-    )
-    return encrypted_message
+# def encrypt_message(public_key_pem):
+#     global user_message
+#     public_key = serialization.load_pem_public_key(
+#         public_key_pem.encode('utf-8'),
+#         backend=default_backend()
+#     )
+#     encrypted_message = public_key.encrypt(
+#         user_message.encode('utf-8'),
+#         padding.OAEP(
+#             mgf=padding.MGF1(algorithm=hashes.SHA256()),
+#             algorithm=hashes.SHA256(),
+#             label=None
+#         )
+#     )
+#     return encrypted_message
 
-def decrypt_message(ciphertext):
-    plaintext = pvt_key_obj.decrypt(
-        ciphertext,
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
-        )
-    )
-    return plaintext.decode('utf-8')
+# def decrypt_message(ciphertext):
+    # plaintext = pvt_key_obj.decrypt(
+    #     ciphertext,
+    #     padding.OAEP(
+    #         mgf=padding.MGF1(algorithm=hashes.SHA256()),
+    #         algorithm=hashes.SHA256(),
+    #         label=None
+    #     )
+    # )
+    # return plaintext.decode('utf-8')
 
 def show_login():
     switch_frame(login_frame)
@@ -97,49 +95,58 @@ def show_register():
 def show_initial():
     switch_frame(initial_frame)
 
-def generate_private_key():
-    private_key = rsa.generate_private_key(
-        public_exponent=65537,
-        key_size=2048,
-        backend=default_backend()
-    )
-    return private_key
-
+# def load_pvt_key():
+#     global my_username,my_password
+#     global pvt_key_obj
+#     with open("pvt_key.pem", "a+") as f:
+#         pass
+#     with open("pvt_key.pem", "r") as f:
+#         pvt_key_pem = f.read()
+#     if pvt_key_pem == "" or pvt_key_pem == None:
+#         pvt_key_obj = generate_private_key()
+#         pvt_key_pem = pvt_key_obj.private_bytes(
+#             encoding=serialization.Encoding.PEM,
+#             format=serialization.PrivateFormat.PKCS8,
+#             encryption_algorithm=serialization.BestAvailableEncryption((my_username+my_password).encode('utf-8'))
+#         ).decode('utf-8')
+#         with open("pvt_key.pem", "w") as f:
+#             f.write(pvt_key_pem)
+#         public_key = pvt_key_obj.public_key()
+#         public_key_pem = public_key.public_bytes(
+#             encoding=serialization.Encoding.PEM,
+#             format=serialization.PublicFormat.SubjectPublicKeyInfo
+#         ).decode('utf-8')
+#         reliable_send(["update_public_key", my_username,public_key_pem])
+#         if reliable_recv() != "public key updated":
+#             load_pvt_key()
+#     else:
+#         pvt_key_obj = serialization.load_pem_private_key(
+#             pvt_key_pem.encode('utf-8'),
+#             password=(my_username+my_password).encode('utf-8'),
+#             backend=default_backend()
+#         )
 def load_pvt_key():
-    global my_username,my_password
-    global pvt_key_obj
+    global pvt_key_obj,my_username,my_password
     with open("pvt_key.pem", "a+") as f:
         pass
     with open("pvt_key.pem", "r") as f:
         pvt_key_pem = f.read()
     if pvt_key_pem == "" or pvt_key_pem == None:
         pvt_key_obj = generate_private_key()
-        pvt_key_pem = pvt_key_obj.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.BestAvailableEncryption((my_username+my_password).encode('utf-8'))
-        ).decode('utf-8')
+        pvt_key_pem = private_key_to_pem(pvt_key_obj,my_username,my_password).decode('utf-8')
         with open("pvt_key.pem", "w") as f:
             f.write(pvt_key_pem)
-        public_key = pvt_key_obj.public_key()
-        public_key_pem = public_key.public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
-        ).decode('utf-8')
+        public_key = generate_public_key(pvt_key_obj)
+        public_key_pem = public_key_to_pem(public_key).decode('utf-8')
         reliable_send(["update_public_key", my_username,public_key_pem])
         if reliable_recv() != "public key updated":
             load_pvt_key()
     else:
-        pvt_key_obj = serialization.load_pem_private_key(
-            pvt_key_pem.encode('utf-8'),
-            password=(my_username+my_password).encode('utf-8'),
-            backend=default_backend()
-        )
-        
+        pvt_key_obj = private_key_from_pem(pvt_key_pem,my_username,my_password)
+
 def register_user():
     username = register_username_entry.get()
     password = register_password_entry.get()
-    
     if username and password:
         message = ["register", username, password]
         reliable_send(message)
@@ -172,61 +179,51 @@ def login():
     else:
         login_message_label.config(text=response, fg="red")
 
+def add_message_to_chat(message):
+    message_display.config(state=tk.NORMAL)
+    message_display.insert(tk.END, message)
+    message_display.config(state=tk.DISABLED)
+
+
+
 def send_message():
     username = username_entry.get()
     message = chat_entry.get()
     chat_entry.delete(0, tk.END)
     if username and message:
         if username in users_pub_key:
-            encrypted_message = encrypt_message(users_pub_key[username])
-            reliable_send(["send_message", my_username, username, encrypted_message.hex()])
-            message_display.config(state=tk.NORMAL)
-            message_display.insert(tk.END, f"YOU: {message}\n")
-            message_display.config(state=tk.DISABLED)
+            encrypted_message = encrypt_message(users_pub_key[username],message)
+            reliable_send(["send_message", my_username, encrypted_message])
+            add_message_to_chat(f"YOU({username}): {message}\n")
         else:
             reliable_send(["request_public_key", username])
             global user_message
             user_message = message
     else:
-        print("Please enter both username and message.")
+        chat_message_label.config(text="Please enter both username and message", fg="red")
 
 def receive_messages():
     global flag
     while flag==True:
-        try:
-            message = reliable_recv()
-            if message==None:
-                break
-            if message[0] == "requested_pub_key":
-                global user_message
-                users_pub_key[message[1]] = message[2]
-                public_key_obj = serialization.load_pem_public_key(
-                    message[2].encode('utf-8'),
-                    backend=default_backend()
-                )
-                encrypted_message = public_key_obj.encrypt(
-                    user_message.encode('utf-8'),
-                    padding.OAEP(
-                        mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                        algorithm=hashes.SHA256(),
-                        label=None
-                    )
-                )
-                reliable_send(["send_message", my_username, encrypted_message.hex()])
-
-            elif message[0] == "message_received":
-                message_display.config(state=tk.NORMAL)
-                message_display.insert(tk.END, f"{decrypt_message(bytes.fromhex(message[1]))}\n")
-                message_display.config(state=tk.DISABLED)
-            elif message[0] == "logout successful":
-                break
-            else:
-                message_display.config(state=tk.NORMAL)
-                message_display.insert(tk.END, f"{message}\n")
-                message_display.config(state=tk.DISABLED)
-                
-        except Exception as e:
-            print(f"Error: {e}")          
+        # try:
+        message = reliable_recv()
+        if message==None:
+            break
+        if message[0] == "requested_pub_key":
+            global user_message
+            public_key=public_key_from_pem(message[2])
+            users_pub_key[message[1]] = public_key
+            encrypted_message=encrypt_message(public_key,user_message)
+            reliable_send(["send_message", my_username, encrypted_message])
+            add_message_to_chat(f"YOU({message[1]}): {user_message}\n")
+        elif message[0] == "message_received":
+            global pvt_key_obj
+            add_message_to_chat(f"FROM({message[1]}): {decrypt_message(pvt_key_obj,message[2])}")
+        elif message[0] == "logout successful":
+            break
+        else:
+            add_message_to_chat(f"{message[1]}\n")
+        
 
 def logout():
     reliable_send(["logout"])
@@ -243,12 +240,7 @@ def logout():
 
 def register_second_device():
     entered_device_code = device_code_entry.get()
-    verification_code = "this0358902fd"
-    if entered_device_code == verification_code:
-        switch_frame(chat_frame)
-        chat_message_label.config(text="Second device added successfully", fg="green")
-    else:
-        print("Invalid device code")
+    reliable_send(["register_second_device", entered_device_code])
 
 def switch_frame(frame):
     login_message_label.config(text="")
