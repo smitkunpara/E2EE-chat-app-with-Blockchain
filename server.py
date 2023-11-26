@@ -83,11 +83,11 @@ def request_public_key(message,is_logged_in):
     #     print(["requested_pub_key",message[1],rows[0][2]])
     #     return ["requested_pub_key",message[1],rows[0][2]]
 
-def send_message(message, is_logged_in):
+def send_message(username,message, is_logged_in):
     if is_logged_in==True:
         if message[1] in online_users:
             ssl_client_socket = online_users[message[1]]
-            reliable_send(ssl_client_socket, ["message_received", message[1],message[2]])
+            reliable_send(ssl_client_socket, ["message_received", username,message[2]])
             return "Message sent"
         else:
             return "User is offline or does not exist"
@@ -126,7 +126,7 @@ def handle_client(ssl_client_socket):
             elif message[0] == "request_public_key":
                 message_result = request_public_key(message, is_logged_in)
             elif message[0] == "send_message":
-                message_result = send_message(message, is_logged_in)
+                message_result = send_message(username,message, is_logged_in)
             elif message[0] == "logout":
                 username,is_logged_in,message_result = logout(username)
             else:
@@ -147,7 +147,7 @@ db = mysql.connector.connect(
 )
 cursor = db.cursor()
 
-host = 'localhost'
+host = '10.1.185.149'
 port = 12345
 
 context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)

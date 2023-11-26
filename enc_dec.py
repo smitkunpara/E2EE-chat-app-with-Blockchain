@@ -66,4 +66,31 @@ def decrypt_message(private_key, encrypted_message):
     )
     return decrypted_message.decode('utf-8')
 
+def sign_message(private_key,message):
+    sign_message = private_key.sign(
+        message.encode('utf-8'),
+        padding.PSS(
+            mgf=padding.MGF1(hashes.SHA256()),
+            salt_length=padding.PSS.MAX_LENGTH
+        ),
+        hashes.SHA256()
+    )
+    return sign_message.hex()
+
+def verify_message(public_key,sign_message,message):
+    try:
+        public_key.verify(
+            bytes.fromhex(sign_message),
+            message.encode('utf-8'),
+            padding.PSS(
+                mgf=padding.MGF1(hashes.SHA256()),
+                salt_length=padding.PSS.MAX_LENGTH
+            ),
+            hashes.SHA256()
+        )
+        return True
+    except:
+        return False
+    
+
 
