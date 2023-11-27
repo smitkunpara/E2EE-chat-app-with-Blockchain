@@ -4,6 +4,7 @@ import threading
 import json
 from enc_dec import *
 import ssl
+from connectioncheck import *
 
 def reliable_send(message):
     global ssl_client_socket
@@ -49,9 +50,10 @@ def pack_widgets():
     message_display.pack(pady=10)
     username_label.pack(side=tk.LEFT, padx=5)
     username_entry.pack(side=tk.LEFT, padx=5)
-    message_label.pack(side=tk.RIGHT, padx=5)
-    chat_entry.pack(side=tk.RIGHT, padx=5)
-    send_button.pack(pady=10,side=tk.RIGHT)
+    message_label.pack(side=tk.LEFT, padx=5)
+    chat_entry.pack(side=tk.LEFT)
+    #add send button into new line of chat frame
+    send_button.pack(padx=30,pady=30,side=tk.LEFT)
 
 def show_login():
     switch_frame(login_frame)
@@ -100,6 +102,21 @@ def register_user():
     else:
         register_message_label.config(text="Please enter both username and password", fg="red")
 
+def start_checking():
+    ip_address = get_ip_address()
+    default_gateway = get_default_gateway()
+    mac_address = get_mac_address(default_gateway)
+    while True:
+        try:
+            if ip_address != get_ip_address():
+                chat_label.config(text="Warning: We detected your MAC address has changed", fg="red")
+            elif mac_address != get_mac_address(default_gateway):
+                chat_label.config(text="Warning: We detected your IP address has changed", fg="red")
+            time.sleep(10)
+        except:
+            chat_label.config(text="Cant able to tract IP/MAC", fg="red")
+    
+
 def login():
     username = login_username_entry.get()
     password = login_password_entry.get()
@@ -114,6 +131,8 @@ def login():
         load_pvt_key()
         receive_thread = threading.Thread(target=receive_messages)
         receive_thread.start()
+        connection_check_thread = threading.Thread(target=start_checking)
+        connection_check_thread.start()
         switch_frame(chat_frame)
     else:
         login_message_label.config(text=response, fg="red")
@@ -122,8 +141,6 @@ def add_message_to_chat(message):
     message_display.config(state=tk.NORMAL)
     message_display.insert(tk.END, message)
     message_display.config(state=tk.DISABLED)
-
-
 
 def send_message():
     username = username_entry.get()
@@ -157,13 +174,14 @@ def receive_messages():
             add_message_to_chat(f"YOU({message[1]}): {user_message}\n")
         elif message[0] == "message_received":
             global pvt_key_obj
-            add_message_to_chat(f"FROM({message[1]}): {decrypt_message(pvt_key_obj,message[2])}")
+            print(f"FROM({message[1]}): {decrypt_message(pvt_key_obj,message[2])}\n")
+            add_message_to_chat(f"FROM({message[1]}): {decrypt_message(pvt_key_obj,message[2])}\n")
         elif message[0] == "logout successful":
             break
         else:
-            add_message_to_chat(f"{message[1]}\n")
+            print("Invalid message received:"+message)
+            # add_message_to_chat(f"{message[1]}\n")
         
-
 def logout():
     reliable_send(["logout"])
     global my_username,my_password,pvt_key_obj,flag
