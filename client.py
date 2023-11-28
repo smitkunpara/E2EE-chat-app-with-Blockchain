@@ -116,7 +116,6 @@ def start_checking():
         except:
             chat_label.config(text="Cant able to tract IP/MAC", fg="red")
     
-
 def login():
     username = login_username_entry.get()
     password = login_password_entry.get()
@@ -228,11 +227,11 @@ def on_close():
 context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 context.minimum_version = ssl.TLSVersion.TLSv1_2
 context.maximum_version = ssl.TLSVersion.TLSv1_3
-context.load_verify_locations('C:/Users/smitk/OneDrive/programs/python/projects/UROP/server-cert.pem')
+context.load_verify_locations('server-cert.pem')
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 ssl_client_socket = context.wrap_socket(client_socket,server_hostname='smit')
-ssl_client_socket.connect(('10.1.185.149', 1234))
+ssl_client_socket.connect(('localhost', 1234))
 pvt_key_obj = None
 flag=True
 r_flag=True
@@ -307,7 +306,4 @@ root.protocol("WM_DELETE_WINDOW", on_close)
 # Packing widgets
 pack_widgets()
 root.mainloop()
-
-
-
 user_message=""

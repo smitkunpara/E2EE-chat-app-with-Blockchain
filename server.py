@@ -146,13 +146,13 @@ db = mysql.connector.connect(
 )
 cursor = db.cursor()
 
-host = '10.1.185.149'
+host = 'localhost'
 port = 1234
 
 context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 context.minimum_version = ssl.TLSVersion.TLSv1_2
 context.maximum_version = ssl.TLSVersion.TLSv1_3
-context.load_cert_chain(certfile="C:/Users/smitk/OneDrive/programs/python/projects/UROP/server-cert.pem", keyfile="C:/Users/smitk/OneDrive/programs/python/projects/UROP/server-key.pem")
+context.load_cert_chain(certfile="server-cert.pem", keyfile="server-key.pem")
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind((host, port))
