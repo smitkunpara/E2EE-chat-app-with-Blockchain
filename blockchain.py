@@ -1,5 +1,8 @@
 from web3 import Web3
 import json
+from dotenv import load_dotenv
+import os
+load_dotenv()
 
 contract_abi = abi=json.loads('''[
 	{
@@ -146,10 +149,10 @@ contract_abi = abi=json.loads('''[
 
 web3 = Web3(Web3.HTTPProvider('HTTP://127.0.0.1:8545'))
 web3.eth.default_account=web3.eth.accounts[0]
-contract_address = '0x126FAE1B3544D9b8A819d31FAB1fe196B11412b2'
+contract_address = os.getenv("CONTRACT_ADDRESS")
 contract = web3.eth.contract(address=contract_address, abi=contract_abi)
-account = '0xc984C2244Eb805dADFd03E73e7E73Ad5557748D9'
-private_key = '0x63b08d56d9cdd782ef49f80ca91050fbc510709f2515ab8e47c76782eaf01e3f'
+account = os.getenv("ACCOUNT")
+private_key = os.getenv("PRIVATE_KEY")
 
 def set_user_data(username, user_password,):
 	try:
