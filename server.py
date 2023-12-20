@@ -146,7 +146,7 @@ db = mysql.connector.connect(
 )
 cursor = db.cursor()
 
-host = 'localhost'
+host = '10.1.166.113'
 port = 1234
 
 context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)

@@ -231,7 +231,7 @@ context.load_verify_locations('server-cert.pem')
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 ssl_client_socket = context.wrap_socket(client_socket,server_hostname='smit')
-ssl_client_socket.connect(('localhost', 1234))
+ssl_client_socket.connect(('10.1.166.113', 1234))
 pvt_key_obj = None
 flag=True
 r_flag=True
